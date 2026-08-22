@@ -131,7 +131,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       console.warn("[boot] timed out waiting for backend; showing app with defaults. If you use an ad blocker, some live data may be unavailable until it's disabled for this site.");
       setBackendBlocked(true);
       markReady();
-    }, 8000);
+    }, 3000);
 
     (async () => {
       await bootstrap();
