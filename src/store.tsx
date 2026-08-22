@@ -72,6 +72,7 @@ export interface Toast {
 
 interface Ctx {
   ready: boolean;
+  backendBlocked: boolean;
   backend: "firestore" | "local";
   user: AuthUser | null;
   profile: Row | null;
@@ -95,6 +96,7 @@ export const useStore = () => useContext(StoreCtx);
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
+  const [backendBlocked, setBackendBlocked] = useState(false);
   const [backend, setBackend] = useState<"firestore" | "local">("local");
   const [user, setUser] = useState<AuthUser | null>(null);
   const [profile, setProfile] = useState<Row | null>(null);
@@ -113,6 +115,24 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   /* boot */
   useEffect(() => {
+    let settled = false;
+    const markReady = () => {
+      if (settled) return;
+      settled = true;
+      setReady(true);
+    };
+    // Safety net: if Firestore's realtime channel is blocked by an ad
+    // blocker / privacy extension (net::ERR_BLOCKED_BY_CLIENT), onSnapshot
+    // never calls back and never errors, so boot would otherwise hang
+    // forever on the loading screen. Force the app to render after a
+    // timeout, falling back to whatever defaults are already in state.
+    const bootTimeout = setTimeout(() => {
+      if (settled) return;
+      console.warn("[boot] timed out waiting for backend; showing app with defaults. If you use an ad blocker, some live data may be unavailable until it's disabled for this site.");
+      setBackendBlocked(true);
+      markReady();
+    }, 8000);
+
     (async () => {
       await bootstrap();
       setBackend((await getDriver()).name);
@@ -127,7 +147,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         const pub = rows.find((r) => r.id === "published");
         if (pub) setDesign({ ...DEFAULT_DESIGN, ...pub, tokens: { ...DEFAULT_DESIGN.tokens, ...pub.tokens }, components: { ...DEFAULT_DESIGN.components, ...pub.components } } as unknown as DesignConfig);
       });
-      setReady(true);
+      clearTimeout(bootTimeout);
+      setBackendBlocked(false);
+      markReady();
       return () => {
         off();
         offS();
@@ -135,10 +157,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       };
     })().catch((e) => {
       logError(e, "store.boot");
-      setReady(true);
+      clearTimeout(bootTimeout);
+      markReady();
     });
     window.addEventListener("error", (ev) => logError(ev.error || ev.message, "window"));
     window.addEventListener("unhandledrejection", (ev: any) => logError(ev.reason, "promise"));
+    return () => clearTimeout(bootTimeout);
   }, []);
 
   /* auth listener */
@@ -203,6 +227,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const value: Ctx = {
     ready,
+    backendBlocked,
     backend,
     user,
     profile,

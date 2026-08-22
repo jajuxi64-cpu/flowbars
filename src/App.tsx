@@ -2,7 +2,23 @@ import { useEffect, useState } from "react";
 import { StoreProvider, useStore } from "./store";
 import PublicSite from "./public/PublicSite";
 import AdminApp from "./admin/AdminApp";
-import { CheckCircle, AlertCircle, Info, X } from "lucide-react";
+import { CheckCircle, AlertCircle, Info, X, ShieldAlert } from "lucide-react";
+
+function BlockedBanner() {
+  const { backendBlocked } = useStore();
+  const [dismissed, setDismissed] = useState(false);
+  if (!backendBlocked || dismissed) return null;
+  return (
+    <div className="sticky top-0 z-[130] flex items-start gap-2.5 px-4 py-2.5 bg-red-950/95 border-b border-red-800 backdrop-blur">
+      <ShieldAlert size={15} className="text-red-400 mt-0.5 shrink-0" />
+      <span className="flex-1 text-[12px] text-red-200 leading-relaxed">
+        An ad blocker or privacy extension appears to be blocking live data (firestore.googleapis.com). Some
+        content may be missing or out of date. Please disable it for this site and refresh.
+      </span>
+      <button onClick={() => setDismissed(true)} className="text-red-500 hover:text-white shrink-0"><X size={13} /></button>
+    </div>
+  );
+}
 
 function Splash() {
   return (
@@ -54,8 +70,18 @@ function Router() {
   // The control center is reachable ONLY on the configured secret path.
   // Any other path renders the public site — there is no admin chrome,
   // no admin link and no way to reach the console by guessing a route.
-  if (first === adminPath) return <AdminApp adminPath={adminPath} />;
-  return <PublicSite />;
+  if (first === adminPath) return (
+    <>
+      <BlockedBanner />
+      <AdminApp adminPath={adminPath} />
+    </>
+  );
+  return (
+    <>
+      <BlockedBanner />
+      <PublicSite />
+    </>
+  );
 }
 
 export default function App() {
