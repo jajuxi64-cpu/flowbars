@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FLOW & BARS</title>
+    <link rel="canonical" href="/" />
+    <meta http-equiv="refresh" content="0; url=/" />
+  </head>
+  <body>
+    <script>
+      // SPA fallback — bounce any non-root path to the hash router
+      const adminPath = (window.localStorage.getItem("fb:lastAdminPath") || "fb-control-x92k");
+      const p = window.location.pathname.replace(/^\//, "");
+      const target = p ? `/#/${p}${window.location.search}` : "/";
+      window.location.replace(target);
+    </script>
+  </body>
+</html>
