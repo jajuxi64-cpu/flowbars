@@ -49,7 +49,7 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
       setError(res?.error || "Something went wrong.");
       return;
     }
-    await refreshProfile();
+    await refreshProfile(res.user);
     if (closeOnOk) {
       toast(`Signed in as ${res.user.username}`, "ok");
       onClose();
