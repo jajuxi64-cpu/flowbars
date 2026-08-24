@@ -88,7 +88,7 @@ interface Ctx {
   toasts: Toast[];
   toast: (msg: string, kind?: Toast["kind"]) => void;
   dismissToast: (id: number) => void;
-  refreshProfile: () => Promise<void>;
+  refreshProfile: (overrideUser?: AuthUser) => Promise<void>;
 }
 
 const StoreCtx = createContext<Ctx>(null as any);
@@ -189,11 +189,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return off;
   }, []);
 
-  const refreshProfile = useCallback(async () => {
-    if (!user) return;
-    const p = await db.get("users", user.uid);
+  const refreshProfile = useCallback(async (overrideUser?: AuthUser) => {
+    const u = overrideUser || user;
+    if (!u) return;
+    if (overrideUser) setUser(overrideUser);
+    const p = await db.get("users", u.uid);
     setProfile(p);
-    if (p) setActor({ uid: user.uid, username: p.username, email: p.email, provider: user.provider, roles: p.roles || [], profile: p });
+    if (p) setActor({ uid: u.uid, username: p.username, email: p.email, provider: u.provider, roles: p.roles || [], profile: p });
   }, [user]);
 
   /* live profile updates for the signed-in user */
